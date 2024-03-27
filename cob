@@ -29,3 +29,17 @@ IDENTIFICATION DIVISION.
            *> or another method as per your project's architecture.
            
            STOP RUN.
+
+
+
+      Start in Java!!!!
+Input :::
+Java: String in pointer:                                                            
+Java: before calling cobol..######
+com.microfocus.cobol.CobolProgramNotFoundException: CobolCalculator not found
+Java: after calling cobol..#######
+	at com.microfocus.cobol.RuntimeSystem.cobcall_int(Native Method)
+	at com.microfocus.cobol.RuntimeSystem.cobcall(Unknown Source)
+	at com.microfocus.javademo.JavaCalculatorClient.main(JavaCalculatorClient.java:26)
+Java: Print string pointer with Checkdigit:                                            
+Java: Print string pointer: -1
