@@ -1,60 +1,3 @@
-package com.tcs.bancs.microservices.util;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.util.*;
-
-public class StringToJsonConverter {
-
-    // Method to split the string by given lengths
-    public static List<String> splitStringByLengths(String input, List<Integer> lengths) {
-        List<String> segments = new ArrayList<>();
-        int currentIndex = 0;
-
-        for (int length : lengths) {
-            if (currentIndex + length <= input.length()) {
-                segments.add(input.substring(currentIndex, currentIndex + length));
-                currentIndex += length;
-            } else {
-                segments.add(input.substring(currentIndex)); // add the remaining part
-                break;
-            }
-        }
-
-        return segments;
-    }
-
-    // Method to convert the split segments into a JSON string
-    public static String convertToJSON(String input) {
-        // Define the lengths of the segments
-        List<Integer> lengths = Arrays.asList(17, 10, 15);
-
-        // Split the input string into segments
-        List<String> segments = splitStringByLengths(input, lengths);
-
-        // Create a map to hold the JSON structure
-        Map<String, String> responseMap = new HashMap<>();
-        responseMap.put("accountNumber", segments.get(0));
-        responseMap.put("referenceNumber", segments.get(1));
-        responseMap.put("amount", segments.get(2));
-
-        // Convert the map to JSON string
-        ObjectMapper objectMapper = new ObjectMapper();
-        String jsonResponse = "";
-        try {
-            jsonResponse = objectMapper.writeValueAsString(responseMap);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
-
-        return jsonResponse;
-    }
-}
-
-
-
-
 package com.tcs.bancs.microservices.services;
 
 import javax.servlet.http.HttpServletRequest;
@@ -84,7 +27,7 @@ import com.tcs.bancs.microservices.util.DBProcess;
 import com.tcs.bancs.microservices.util.DaoUtilities;
 import com.tcs.bancs.microservices.util.FrameworkConstants;
 import com.tcs.bancs.microservices.service.response.model.CbsSixEnq;
-import com.tcs.bancs.microservices.util.StringToJsonConverter; // Import the new converter class
+import com.tcs.bancs.microservices.util.JsonConverter;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 
@@ -124,7 +67,7 @@ public class VisualCobol_Available_bal_Wrapper {
     WaOutputBalance outputs = new WaOutputBalance();
 
     @SuppressWarnings({ "unchecked", "rawtypes", "static-access" })
-    @ApiOperation(value = "Call COB code", notes = "Retrieve check Digit: This API is used to fetch accountNum with checkdigit.", response = CbsSixEnq.class)
+    @ApiOperation(value = "Call COB code", notes = "Retrieve check Digit:This API is used to fetch accountNum with checkdigit.", response = CbsSixEnq.class)
     @PostMapping(value = { "/AvailableBalance" }, produces = { "application/json" })
     @CrossOrigin()
     @JsonIgnore
@@ -144,7 +87,71 @@ public class VisualCobol_Available_bal_Wrapper {
         System.out.println("Java: after calling cobol..#######");
         System.out.println("Java: Print string pointer: " + ptrstring1);
 
-        // Convert the output string to JSON using the new converter class
-        return StringToJsonConverter.convertToJSON(ptrstring1);
+        // Ensure the output string is 100 characters long
+        if (ptrstring1.length() != 100) {
+            throw new IllegalArgumentException("Output string length is not 100 characters.");
+        }
+
+        // Convert the string to a char array
+        char[] charArray = ptrstring1.toCharArray();
+
+        // Manually build the chunks for account number, amount, and journal number
+        char[] accountNumberArray = new char[17];
+        char[] amountArray = new char[20];
+        char[] journalNumberArray = new char[30];
+
+        for (int i = 0; i < 17; i++) {
+            accountNumberArray[i] = charArray[i];
+        }
+        for (int i = 0; i < 20; i++) {
+            amountArray[i] = charArray[i + 17];
+        }
+        for (int i = 0; i < 30; i++) {
+            journalNumberArray[i] = charArray[i + 37];
+        }
+
+        String accountNumber = new String(accountNumberArray);
+        String amount = new String(amountArray);
+        String journalNumber = new String(journalNumberArray);
+
+        // Create a map to hold the values
+        Map<String, String> responseMap = new HashMap<>();
+        responseMap.put("accountNumber", accountNumber);
+        responseMap.put("amount", amount);
+        responseMap.put("journalNumber", journalNumber);
+
+        // Use JsonConverter to convert the map to a JSON string
+        JsonConverter jsonConverter = new JsonConverter();
+        return jsonConverter.convertMapToJson(responseMap);
+    }
+}
+
+
+
+
+
+
+package com.tcs.bancs.microservices.util;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.util.Map;
+
+public class JsonConverter {
+    private final ObjectMapper objectMapper;
+
+    public JsonConverter() {
+        this.objectMapper = new ObjectMapper();
+    }
+
+    public String convertMapToJson(Map<String, String> map) {
+        String jsonResponse = null;
+        try {
+            jsonResponse = objectMapper.writeValueAsString(map);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return jsonResponse;
     }
 }
